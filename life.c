@@ -39,10 +39,10 @@ int main(int argc, char **argv)
     int world_height = MAX(36, LINES);
     int world_width  = MAX(200, COLS);
 
-    int screen_height = LINES - 1;  // Last line reserved for status bar
+    int screen_height = LINES - 2;  // Last line reserved for status bar
     int screen_width  = COLS;
 
-    int status_line = LINES - 1;
+    int status_line = LINES - 2;
 
     coords screen_in_world = {0, 0};
     coords user_in_world   = {0, 0};
@@ -71,11 +71,14 @@ int main(int argc, char **argv)
                 user_in_world.y--;
                 user_in_screen.y--;
                 if (user_in_world.y < 0) {  // Wrap around the world
-                    user_in_world.y = world_height  - 1;
+                    user_in_world.y = world_height - 1;
                 } 
                 if (user_in_screen.y < scroll_offset) {
                     // Move the screen down with the user, so the user stays in the same screen position
                     screen_in_world.y--;
+                    if (screen_in_world.y < 0) {  // The screen can also wrap
+                        screen_in_world.y = world_height - 1;
+                    }
                     user_in_screen.y++;  // Stay in the same position by cancelling the previous decrement
                 }
                 // All the following cases follow the same pattern
@@ -88,6 +91,9 @@ int main(int argc, char **argv)
                 } 
                 if (user_in_screen.x < scroll_offset) {
                     screen_in_world.x--;
+                    if (screen_in_world.x < 0) {
+                        screen_in_world.x = world_width - 1;
+                    }
                     user_in_screen.x++;
                 }
                 break;
@@ -99,6 +105,9 @@ int main(int argc, char **argv)
                 } 
                 if (screen_height - user_in_screen.y <= scroll_offset) {
                     screen_in_world.y++;
+                    if (screen_in_world.y >= world_height) {
+                        screen_in_world.y = 0;
+                    }
                     user_in_screen.y--;
                 }
                 break;
@@ -110,6 +119,9 @@ int main(int argc, char **argv)
                 } 
                 if (screen_width - user_in_screen.x <= scroll_offset) {
                     screen_in_world.x++;
+                    if (screen_in_world.x >= world_height) {
+                        screen_in_world.x = 0;
+                    }
                     user_in_screen.x--;
                 }
                 break;
@@ -129,12 +141,27 @@ int main(int argc, char **argv)
             case 'q':
                 close(EXIT_SUCCESS);
         }
+
+        //
+        // Draw
+        // 
         erase();
 
+        move(status_line, 0);
+        clrtoeol();
+        move(status_line, 0);
+        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
+                                           user_in_screen.x, user_in_screen.y, 
+                                           paused ? "PAUSED" : "",
+                                           steps);
+
+        move(0, 0);
         for (int i = 0; i < screen_height; i++) {
             int y = (screen_in_world.y + i) % world_height;
             for (int j = 0; j < screen_width; j++) {
                 int x = (screen_in_world.x + j) % world_width;
+                assert(y >= 0 && y < world_height);
+                assert(x >= 0 && x < world_width);
                 chtype cell = ' ';
                 if (user_in_world.y == y && user_in_world.x == x)
                     attron(A_REVERSE);
@@ -145,6 +172,9 @@ int main(int argc, char **argv)
             }
         }
 
+        //
+        // Iterate the game
+        //
         if (!paused || iterate) {
             steps++;
             for (int y = 0; y < world_height; y++) {
@@ -186,13 +216,6 @@ int main(int argc, char **argv)
             iterate = false;
         }
 
-        move(status_line, 0);
-        clrtoeol();
-        move(status_line, 0);
-        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
-                                       user_in_screen.x, user_in_screen.y, 
-                                       paused ? "PAUSED" : "",
-                                       steps);
     }
 }
 
