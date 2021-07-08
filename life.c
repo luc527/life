@@ -73,8 +73,6 @@ int main(int argc, char **argv)
                     user_in_world.y = world_height  - 1;
                 } 
                 if (user_in_screen.y < scroll_offset) {
-                    // user_in_screen.y < scroll_offset checks if we *should* to move the screen down
-                    // screen_in_world.y checkes if we *can* move the screen down
                     // Move the screen down with the user, so the user stays in the same screen position
                     screen_in_world.y--;
                     user_in_screen.y++;  // Stay in the same position by cancelling the previous decrement
@@ -111,7 +109,7 @@ int main(int argc, char **argv)
                 } 
                 if (screen_width - user_in_screen.x <= scroll_offset) {
                     screen_in_world.x++;
-                    user_in_screen.x--;  // cancels previous increment, user stays in the same screen position
+                    user_in_screen.x--;
                 }
                 break;
             case ' ':
@@ -124,7 +122,6 @@ int main(int argc, char **argv)
             case 'i':
                 iterate = true;
                 break;
-            // ...
             case 'q':
                 close(EXIT_SUCCESS);
         }
@@ -176,7 +173,6 @@ int main(int argc, char **argv)
                     }
                 }
             }
-            // TODO use memcpy
             for (int y = 0; y < world_height; y++) {
                 for (int x = 0; x < world_width; x++) {
                     world[y][x] = aux[y][x];
