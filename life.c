@@ -123,6 +123,9 @@ int main(int argc, char **argv)
             case 'i':
                 iterate = true;
                 break;
+            case 'z':
+                //zoom_out_mode();
+                break;
             case 'q':
                 close(EXIT_SUCCESS);
         }
@@ -212,3 +215,41 @@ char world_segment_to_braille(int y, int x, int** world)
     return braille[bits];
 }
 
+#if 0
+void zoom_out_mode(state* life) {
+    while (true)
+    {
+        chtype ch = getch();
+        switch (ch) {
+            case 'w':
+                break;
+            case 'a':
+                break;
+            case 's':
+                break;
+            case 'd':
+                break;
+            case ' ':
+                break;
+            case 'p':
+                break;
+            case 'i':
+                break;
+            case 'z':
+                return;
+            case 'q':
+                close(EXIT_SUCCESS);
+        }
+    }
+    erase();
+    // Braille characters are three dots tall and two dots wide
+    for (int i = 0; i < screen_height * 3; i += 3) {
+        int y = /*...*/;
+        for (int j = 0; j < screen_width * 2; j += 2) {
+            int x = /*...*/;
+            chtype ch = world_segment_to_braille(y, x, world);
+            addch(ch);
+        }
+    }
+}
+#endif
