@@ -59,6 +59,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < world_height; i++)
         aux[i] = calloc_or_fail(world_width, sizeof(*aux[i]));
 
+    unsigned long steps = 0;
     bool paused = true;
     bool iterate = false;
 
@@ -145,6 +146,7 @@ int main(int argc, char **argv)
         }
 
         if (!paused || iterate) {
+            steps++;
             for (int y = 0; y < world_height; y++) {
                 for (int x = 0; x < world_width; x++) {
 
@@ -188,9 +190,10 @@ int main(int argc, char **argv)
         move(status_line, 0);
         clrtoeol();
         move(status_line, 0);
-        printw("(%d, %d) [%d, %d] %s", user_in_world.x,   user_in_world.y,
+        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
                                        user_in_screen.x, user_in_screen.y, 
-                                       paused ? "PAUSED" : "");
+                                       paused ? "PAUSED" : "",
+                                       steps);
     }
 }
 
