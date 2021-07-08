@@ -193,5 +193,22 @@ int main(int argc, char **argv)
     }
 }
 
+char* braille = " ⠀⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏⠐⠑⠒⠓⠔⠕⠖⠗⠘⠙⠚⠛⠜⠝⠞⠟⠠⠡⠢⠣⠤⠥⠦⠧⠨⠩⠪⠫⠬⠭⠮⠯⠰⠱⠲⠳⠴⠵⠶⠷⠸⠹⠺⠻⠼⠽⠾⠿";
 
+char world_segment_to_braille(int y, int x, int** world)
+{
+    // v (x,y)
+    // 52
+    // 41 -> 54321
+    // 30
+    unsigned bits = 0;
+    bits |= (world[y+2][x+1] & 1) << 0;
+    bits |= (world[y+1][x+1] & 1) << 1;
+    bits |= (world[y  ][x+1] & 1) << 2;
+    bits |= (world[y+2][x  ] & 1) << 3;
+    bits |= (world[y+1][x  ] & 1) << 4;
+    bits |= (world[y  ][x  ] & 1) << 5;
+    assert(bits >= 0 && bits < 64);
+    return braille[bits];
+}
 
