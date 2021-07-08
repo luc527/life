@@ -39,10 +39,10 @@ int main(int argc, char **argv)
     int world_height = MAX(36, LINES);
     int world_width  = MAX(200, COLS);
 
-    int screen_height = LINES - 2;  // Last line reserved for status bar
+    int screen_height = LINES - 1;  // Last line reserved for status bar
     int screen_width  = COLS;
 
-    int status_line = LINES - 2;
+    int status_line = LINES - 1;
 
     coords screen_in_world = {0, 0};
     coords user_in_world   = {0, 0};
@@ -239,7 +239,7 @@ char world_segment_to_braille(int y, int x, int** world)
 }
 
 #if 0
-void zoom_out_mode(state* life) {
+void zoom_out_mode() {
     while (true)
     {
         chtype ch = getch();
@@ -266,12 +266,11 @@ void zoom_out_mode(state* life) {
     }
     erase();
     // Braille characters are three dots tall and two dots wide
-    for (int i = 0; i < screen_height * 3; i += 3) {
-        int y = /*...*/;
-        for (int j = 0; j < screen_width * 2; j += 2) {
-            int x = /*...*/;
-            chtype ch = world_segment_to_braille(y, x, world);
-            addch(ch);
+    for (int i = 0; i < screen_height; i++) {
+        int y = (screen_in_world.y + i) % world_height;
+        for (int j = 0; j < screen_width; j++) {
+            int x = (screen_in_world.x + j) % world_width;
+            addch(to_braille(y, x, world));
         }
     }
 }
