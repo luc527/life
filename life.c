@@ -28,6 +28,27 @@ void* calloc_or_fail(size_t nmemb, size_t size)
     return p;
 }
 
+int world_height;
+int world_width;
+
+int** world;
+int** aux;
+
+int screen_height;
+int screen_width;
+
+int status_line;
+int scroll_offset;
+
+coords screen_in_world;
+coords user_in_world;
+coords user_in_screen;
+
+unsigned long steps;
+bool paused;
+bool iterate_one_step;
+
+
 int main(int argc, char **argv)
 {
     initscr();
@@ -36,32 +57,37 @@ int main(int argc, char **argv)
     curs_set(0);
     halfdelay(1);
 
-    int world_height = MAX(36, LINES);
-    int world_width  = MAX(200, COLS);
+    world_height = MAX(36, LINES);
+    world_width  = MAX(200, COLS);
 
-    int screen_height = LINES - 1;  // Last line reserved for status bar
-    int screen_width  = COLS;
+    screen_height = LINES - 1;  // Last line reserved for status bar
+    screen_width  = COLS;
 
-    int status_line = LINES - 1;
+    scroll_offset = 3;
+    status_line = LINES - 1;
 
-    coords screen_in_world = {0, 0};
-    coords user_in_world   = {0, 0};
-    coords user_in_screen  = {0, 0};  // Used with scroll_offset to determine when to scroll
+    screen_in_world.y = 0;
+    screen_in_world.x = 0;
 
-    int scroll_offset = 3;
+    user_in_world.y = 0;
+    user_in_world.x = 0;
 
-    int** world = calloc_or_fail(world_height, sizeof(*world));
+    user_in_screen.y = 0; // Used with scroll_offset to determine when to scroll
+    user_in_screen.x = 0;
+
+
+    world = calloc_or_fail(world_height, sizeof(*world));
     for (int i = 0; i < world_height; i++)
         world[i] = calloc_or_fail(world_width, sizeof(*world[i]));
 
     // Auxiliary array for iterating
-    int** aux = calloc_or_fail(world_height, sizeof(*aux));
+    aux = calloc_or_fail(world_height, sizeof(*aux));
     for (int i = 0; i < world_height; i++)
         aux[i] = calloc_or_fail(world_width, sizeof(*aux[i]));
 
-    unsigned long steps = 0;
-    bool paused = true;
-    bool iterate = false;
+    steps = 0;
+    paused = true;
+    iterate_one_step = false;
 
     while (true)
     {
@@ -133,7 +159,7 @@ int main(int argc, char **argv)
                 paused = !paused;
                 break;
             case 'i':
-                iterate = true;
+                iterate_one_step = true;
                 break;
             case 'z':
                 //zoom_out_mode();
@@ -175,7 +201,7 @@ int main(int argc, char **argv)
         //
         // Iterate the game
         //
-        if (!paused || iterate) {
+        if (!paused || iterate_one_step) {
             steps++;
             for (int y = 0; y < world_height; y++) {
                 for (int x = 0; x < world_width; x++) {
@@ -213,7 +239,7 @@ int main(int argc, char **argv)
                     world[y][x] = aux[y][x];
                 }
             }
-            iterate = false;
+            iterate_one_step = false;
         }
 
     }
