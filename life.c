@@ -266,6 +266,12 @@ void iterate()
 
 // ==============================
 
+inline
+int safe_world_get(int y, int x)
+{
+    return (y >= 0 && y < world_height && x >= 0 && x < world_width) ? world[y][x] : 0;
+}
+
 wchar_t braille[64] = {L'⠀',L'⠁',L'⠂',L'⠃',L'⠄',L'⠅',L'⠆',L'⠇',L'⠈',L'⠉',L'⠊',L'⠋',L'⠌',L'⠍',L'⠎',L'⠏',
                        L'⠐',L'⠑',L'⠒',L'⠓',L'⠔',L'⠕',L'⠖',L'⠗',L'⠘',L'⠙',L'⠚',L'⠛',L'⠜',L'⠝',L'⠞',L'⠟',
                        L'⠠',L'⠡',L'⠢',L'⠣',L'⠤',L'⠥',L'⠦',L'⠧',L'⠨',L'⠩',L'⠪',L'⠫',L'⠬',L'⠭',L'⠮',L'⠯',
@@ -273,19 +279,31 @@ wchar_t braille[64] = {L'⠀',L'⠁',L'⠂',L'⠃',L'⠄',L'⠅',L'⠆',L'⠇',L
 
 wchar_t to_braille(int y, int x, int** world)
 {
-    assert(y >= 0 && y < world_height - 2);
-    assert(x >= 0 && x < world_width - 1);
+    // y and x are the coordinates of the upper-left corner of the 2x3
+    // sub-matrix of the world we have to make a braille character from.  So we
+    // need to add 2 to y and 1 to x to get the other elements. But these may
+    // be out-of-bounds of the world, as pictured:
+    //----------+
+    //          |
+    //          *#   (* denotes the [y][x] position)
+    //          ##
+    //          ##
+    //          |
+    //----------+
+    // What we want is to treat those as empty/dead cells.
+    // That's why we use the safe_world_get function.
+
     // v (x,y)
     // 03
     // 14 -> 543210
     // 25
     unsigned bits = 0;
-    bits |= (world[y  ][x  ] & 1) << 0;
-    bits |= (world[y+1][x  ] & 1) << 1;
-    bits |= (world[y+2][x  ] & 1) << 2;
-    bits |= (world[y  ][x+1] & 1) << 3;
-    bits |= (world[y+1][x+1] & 1) << 4;
-    bits |= (world[y+2][x+1] & 1) << 5;
+    bits |= (safe_world_get(y,   x)   & 1) << 0;
+    bits |= (safe_world_get(y+1, x)   & 1) << 1;
+    bits |= (safe_world_get(y+2, x)   & 1) << 2;
+    bits |= (safe_world_get(y,   x+1) & 1) << 3;
+    bits |= (safe_world_get(y+1, x+1) & 1) << 4;
+    bits |= (safe_world_get(y+2, x+1) & 1) << 5;
     assert(bits >= 0 && bits < 64);
     return braille[bits];
 }
@@ -317,7 +335,6 @@ void zoom_out_mode() {
         erase();
         print_status_line();
         move(0, 0);
-        // Braille characters are three dots tall and two dots wide
         for (int i = 0; i < 3*screen_height; i+=3) {
             int y = (screen_in_world.y + i) % world_height;
             for (int j = 0; j < 2*screen_width; j+=2) {
