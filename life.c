@@ -11,8 +11,6 @@ typedef struct {
     int y;
 } coords;
 
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
 void close(int code)
 {
     endwin();
@@ -37,8 +35,17 @@ int main(int argc, char **argv)
     curs_set(0);
     halfdelay(1);
 
-    int world_height = MAX(36, LINES);
-    int world_width  = MAX(200, COLS);
+    int world_height = 40;
+    int world_width  = 150;
+
+    if (argc >= 3) {
+        int arg_height = atoi(argv[1]);
+        int arg_width  = atoi(argv[2]);
+        if (arg_height > 5 && arg_height < 1000) world_height = arg_height;
+        if (arg_width  > 5 && arg_width  < 1000) world_width  = arg_width;
+        // It gets quite slow at 999x999!
+        // TODO optimize so it runs smoothly even with a very large world
+    }
 
     int screen_height = LINES - 1;  // Last line reserved for status bar
     int screen_width  = COLS;
