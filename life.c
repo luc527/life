@@ -13,8 +13,6 @@ typedef struct {
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-// ==============================
-
 void close(int code)
 {
     endwin();
@@ -31,75 +29,39 @@ void* calloc_or_fail(size_t nmemb, size_t size)
     return p;
 }
 
-// ==============================
-
-void print_status_line();
-void iterate();
-
-// ==============================
-
-int world_height;
-int world_width;
-
-int** world;
-int** aux;
-
-int screen_height;
-int screen_width;
-
-int status_line;
-int scroll_offset;
-
-coords screen_in_world;
-coords user_in_world;
-coords user_in_screen;
-
-unsigned long steps;
-bool paused;
-bool iterate_one_step;
-
-// ==============================
-
 int main(int argc, char **argv)
 {
-    setlocale(LC_ALL, "");
     initscr();
     cbreak();
     noecho();
     curs_set(0);
     halfdelay(1);
 
-    world_height = MAX(36, LINES);
-    world_width  = MAX(200, COLS);
+    int world_height = MAX(36, LINES);
+    int world_width  = MAX(200, COLS);
 
-    screen_height = LINES - 1;  // Last line reserved for status bar
-    screen_width  = COLS;
+    int screen_height = LINES - 1;  // Last line reserved for status bar
+    int screen_width  = COLS;
 
-    scroll_offset = 3;
-    status_line = LINES - 1;
+    int scroll_offset = 3;
+    int status_line = LINES - 1;
 
-    screen_in_world.y = 0;
-    screen_in_world.x = 0;
+    coords screen_in_world = {0, 0};
+    coords user_in_world   = {0, 0};
+    coords user_in_screen  = {0, 0}; // Used with scroll_offset to determine when to scroll
 
-    user_in_world.y = 0;
-    user_in_world.x = 0;
-
-    user_in_screen.y = 0; // Used with scroll_offset to determine when to scroll
-    user_in_screen.x = 0;
-
-
-    world = calloc_or_fail(world_height, sizeof(*world));
+    int** world = calloc_or_fail(world_height, sizeof(*world));
     for (int i = 0; i < world_height; i++)
         world[i] = calloc_or_fail(world_width, sizeof(*world[i]));
 
     // Auxiliary array for iterating
-    aux = calloc_or_fail(world_height, sizeof(*aux));
+    int** aux = calloc_or_fail(world_height, sizeof(*aux));
     for (int i = 0; i < world_height; i++)
         aux[i] = calloc_or_fail(world_width, sizeof(*aux[i]));
 
-    steps = 0;
-    paused = true;
-    iterate_one_step = false;
+    unsigned long steps = 0;
+    bool paused = true;
+    bool iterate_one_step = false;
 
     while (true)
     {
@@ -181,7 +143,13 @@ int main(int argc, char **argv)
         // Draw
         // 
         erase();
-        print_status_line();
+        move(status_line, 0);
+        clrtoeol();
+        move(status_line, 0);
+        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
+                                           user_in_screen.x, user_in_screen.y, 
+                                           paused ? "PAUSED" : "",
+                                           steps);
         move(0, 0);
         for (int i = 0; i < screen_height; i++) {
             int y = (screen_in_world.y + i) % world_height;
@@ -244,17 +212,3 @@ int main(int argc, char **argv)
     }
 }
 
-void print_status_line()
-{
-        move(status_line, 0);
-        clrtoeol();
-        move(status_line, 0);
-        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
-                                           user_in_screen.x, user_in_screen.y, 
-                                           paused ? "PAUSED" : "",
-                                           steps);
-}
-
-void iterate()
-{
-}
