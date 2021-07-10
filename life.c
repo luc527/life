@@ -8,7 +8,6 @@
 
 #define DEFAULT_WORLD_WIDTH  150
 #define DEFAULT_WORLD_HEIGHT 40
-#define DEFAULT_MAX_STEPS 1234
 
 typedef struct {
     int x;
@@ -103,8 +102,7 @@ int main(int argc, char **argv)
             case 'h': world_height = atoi(&argv[i][2]); break;
             case 'I':
                 run_interactive_mode = false;
-                if (argv[i][2] == '\0') max_steps = DEFAULT_MAX_STEPS;
-                else max_steps = atoi(&argv[i][2]);
+                max_steps = atoi(&argv[i][2]);
                 break;
             }
         }
