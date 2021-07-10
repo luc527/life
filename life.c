@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define DEFAULT_WORLD_WIDTH  150
+#define DEFAULT_WORLD_HEIGHT 40
+#define DEFAULT_MAX_STEPS 1234
+
 typedef struct {
     int x;
     int y;
@@ -45,6 +49,12 @@ int** aux;  // Auxiliary array for iterating
 unsigned long steps;
 
 //
+// Variales regarding quiet mode
+//
+
+unsigned long max_steps;
+
+//
 // Variables regarding interactive mode
 //
 
@@ -61,32 +71,50 @@ coords user_in_screen;
 bool paused;
 bool iterate_one_step;
 
+void print_world() {
+    for (int y = 0; y < world_height; y++) {
+        for (int x = 0; x < world_width; x++) {
+            putchar(world[y][x] ? '#' : ' ');
+        }
+        putchar('\n');
+    }
+}
+
+
 // ==============================
 
 int main(int argc, char **argv)
 {
     bool run_interactive_mode = true;
 
-    world_height = 40;
-    world_width  = 150;
-
     // TODO display usage when -h is an option
+    // FIXME the user_in_screen scrolling stuff is really weird when the world is smaller than the screen.
+    //       possible fix (really just guessing): screen_height = MAX(world_height-1, LINES-1);
+    //                                            screen_width  = MAX(world_width,  COLS);
+    //       another possible fix is to disable the scroll (also just guessing)
+
+    world_height = DEFAULT_WORLD_HEIGHT;
+    world_width  = DEFAULT_WORLD_WIDTH;
 
     for (int i = 1; i < argc; i++) {
-        int arg_height = world_height;
-        int arg_width  = world_height;
         if (argv[i][0] == '-') {
             switch (argv[i][1]) {
-            case 'w': arg_width  = atoi(&argv[i][2]); break;
-            case 'h': arg_height = atoi(&argv[i][2]); break;
-            case 'I': run_interactive_mode = false; break;
+            case 'w': world_width  = atoi(&argv[i][2]); break;
+            case 'h': world_height = atoi(&argv[i][2]); break;
+            case 'I':
+                run_interactive_mode = false;
+                if (argv[i][2] == '\0') max_steps = DEFAULT_MAX_STEPS;
+                else max_steps = atoi(&argv[i][2]);
+                break;
             }
         }
-        bool ok_width  = arg_width  >= 5 && arg_width  <= 1000;
-        bool ok_height = arg_height >= 5 && arg_height <= 1000;
-        if (ok_width)  world_width =  arg_width;
-        if (ok_height) world_height = arg_height;
-        if (!ok_width || !ok_height) fputs("Dimensions too small (<5) or too large (>1000)!\n", stderr);
+        bool ok_width  = world_width  >= 5 && world_width  <= 1000;
+        bool ok_height = world_height >= 5 && world_height <= 1000;
+        if (!ok_width || !ok_height) {
+            fputs("Dimensions too small (<5) or too large (>1000)!\n", stderr);
+            world_height = DEFAULT_WORLD_HEIGHT;
+            world_width  = DEFAULT_WORLD_WIDTH;
+        }
     }
 
     world = calloc_or_fail(world_height, sizeof(*world));
@@ -104,6 +132,49 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+void iterate()
+{   // {{{
+    steps++;
+    for (int y = 0; y < world_height; y++) {
+        for (int x = 0; x < world_width; x++) {
+
+            int neighbors = 0;
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    if (i == 0 && j == 0)
+                        continue;
+
+                    int ii = (y + i) % world_height;
+                    if (ii < 0) ii += world_height;
+
+                    int jj = (x + j) % world_width;
+                    if (jj < 0) jj += world_width;
+
+                    assert(ii >= 0 && ii < world_height);
+                    assert(jj >= 0 && jj < world_width);
+
+                    if (world[ii][jj])
+                        neighbors++;
+                }
+            }
+
+            aux[y][x] = world[y][x];
+            if (world[y][x]) {
+                if (neighbors < 2 || neighbors > 3)
+                    aux[y][x] = 0;
+            } else {
+                if (neighbors == 3)
+                    aux[y][x] = 1;
+            }
+        }
+    }
+    for (int y = 0; y < world_height; y++) {
+        for (int x = 0; x < world_width; x++) {
+            world[y][x] = aux[y][x];
+        }
+    }
+}   // }}}
 
 void interactive_mode()
 {   // {{{
@@ -204,6 +275,8 @@ void interactive_mode()
             case 'i':
                 iterate_one_step = true;
                 break;
+            // TODO add more commands: c (clear), r (random), ...
+            // also some for moving faster (like three squares at a time or something)
             case 'q':
                 close(EXIT_SUCCESS);
         }
@@ -236,45 +309,7 @@ void interactive_mode()
         }
 
         if (!paused || iterate_one_step) {
-            steps++;
-            for (int y = 0; y < world_height; y++) {
-                for (int x = 0; x < world_width; x++) {
-
-                    int neighbors = 0;
-                    for (int i = -1; i <= 1; i++) {
-                        for (int j = -1; j <= 1; j++) {
-                            if (i == 0 && j == 0)
-                                continue;
-
-                            int ii = (y + i) % world_height;
-                            if (ii < 0) ii += world_height;
-
-                            int jj = (x + j) % world_width;
-                            if (jj < 0) jj += world_width;
-
-                            assert(ii >= 0 && ii < world_height);
-                            assert(jj >= 0 && jj < world_width);
-
-                            if (world[ii][jj])
-                                neighbors++;
-                        }
-                    }
-
-                    aux[y][x] = world[y][x];
-                    if (world[y][x]) {
-                        if (neighbors < 2 || neighbors > 3)
-                            aux[y][x] = 0;
-                    } else {
-                        if (neighbors == 3)
-                            aux[y][x] = 1;
-                    }
-                }
-            }
-            for (int y = 0; y < world_height; y++) {
-                for (int x = 0; x < world_width; x++) {
-                    world[y][x] = aux[y][x];
-                }
-            }
+            iterate();
             iterate_one_step = false;
         }
     }
@@ -283,6 +318,24 @@ void interactive_mode()
 void quiet_mode()
 {   // {{{
     // Read seed from stdin
-    // etc.
+    int c, y=0, x=0;
+    while ((c = getchar()) != EOF) {
+        if (c == '\n') {
+            y++;
+            if (y >= world_height) break;
+            x = 0;
+        } else {
+            world[y][x] = c != ' ';
+            x++;
+            if (x >= world_width) break;
+        }
+    }
+
+    while (steps < max_steps)
+        iterate();
+    // No need to do steps++, iterate() already does that for us
+
+    // Write final state to stdout
+    print_world();
 }   // }}}
 
