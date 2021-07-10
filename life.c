@@ -27,48 +27,110 @@ void* calloc_or_fail(size_t nmemb, size_t size)
     return p;
 }
 
+// ==============================
+
+void interactive_mode();
+void quiet_mode();
+
+//
+// Variables regarding both modes
+//
+
+int world_height;
+int world_width;
+
+int** world;
+int** aux;  // Auxiliary array for iterating
+
+unsigned long steps;
+
+//
+// Variables regarding interactive mode
+//
+
+int screen_height;
+int screen_width;
+
+int scroll_offset;
+int status_line;
+
+coords screen_in_world;
+coords user_in_world;
+coords user_in_screen;
+
+bool paused;
+bool iterate_one_step;
+
+// ==============================
+
 int main(int argc, char **argv)
 {
+    bool run_interactive_mode = true;
+
+    world_height = 40;
+    world_width  = 150;
+
+    // TODO display usage when -h is an option
+
+    for (int i = 1; i < argc; i++) {
+        int arg_height = world_height;
+        int arg_width  = world_height;
+        if (argv[i][0] == '-') {
+            switch (argv[i][1]) {
+            case 'w': arg_width  = atoi(&argv[i][2]); break;
+            case 'h': arg_height = atoi(&argv[i][2]); break;
+            case 'I': run_interactive_mode = false; break;
+            }
+        }
+        bool ok_width  = arg_width  >= 5 && arg_width  <= 1000;
+        bool ok_height = arg_height >= 5 && arg_height <= 1000;
+        if (ok_width)  world_width =  arg_width;
+        if (ok_height) world_height = arg_height;
+        if (!ok_width || !ok_height) fputs("Dimensions too small (<5) or too large (>1000)!\n", stderr);
+    }
+
+    world = calloc_or_fail(world_height, sizeof(*world));
+    for (int i = 0; i < world_height; i++)
+        world[i] = calloc_or_fail(world_width, sizeof(*world[i]));
+
+    aux = calloc_or_fail(world_height, sizeof(*aux));
+    for (int i = 0; i < world_height; i++)
+        aux[i] = calloc_or_fail(world_width, sizeof(*aux[i]));
+
+    steps = 0;
+
+    if (run_interactive_mode) interactive_mode();
+    else quiet_mode();
+
+    return 0;
+}
+
+void interactive_mode()
+{   // {{{
     initscr();
     cbreak();
     noecho();
     curs_set(0);
     halfdelay(1);
 
-    int world_height = 40;
-    int world_width  = 150;
+    // Last line reserved for status bar
+    screen_height = LINES - 1;  
+    screen_width  = COLS;
 
-    if (argc >= 3) {
-        int arg_height = atoi(argv[1]);
-        int arg_width  = atoi(argv[2]);
-        if (arg_height > 5 && arg_height < 1000) world_height = arg_height;
-        if (arg_width  > 5 && arg_width  < 1000) world_width  = arg_width;
-        // It gets quite slow at 999x999!
-        // TODO optimize so it runs smoothly even with a very large world
-    }
+    scroll_offset = 3;
+    status_line = LINES - 1;
 
-    int screen_height = LINES - 1;  // Last line reserved for status bar
-    int screen_width  = COLS;
+    screen_in_world.y = 0;
+    screen_in_world.x = 0;
 
-    int scroll_offset = 3;
-    int status_line = LINES - 1;
+    user_in_world.y = 0;
+    user_in_world.x = 0;
 
-    coords screen_in_world = {0, 0};
-    coords user_in_world   = {0, 0};
-    coords user_in_screen  = {0, 0}; // Used with scroll_offset to determine when to scroll
+    user_in_screen.y = 0;
+    user_in_screen.x = 0;
 
-    int** world = calloc_or_fail(world_height, sizeof(*world));
-    for (int i = 0; i < world_height; i++)
-        world[i] = calloc_or_fail(world_width, sizeof(*world[i]));
-
-    // Auxiliary array for iterating
-    int** aux = calloc_or_fail(world_height, sizeof(*aux));
-    for (int i = 0; i < world_height; i++)
-        aux[i] = calloc_or_fail(world_width, sizeof(*aux[i]));
-
-    unsigned long steps = 0;
-    bool paused = true;
-    bool iterate_one_step = false;
+    paused = true;
+    iterate_one_step = false;
 
     while (true)
     {
@@ -126,7 +188,7 @@ int main(int argc, char **argv)
                 } 
                 if (screen_width - user_in_screen.x <= scroll_offset) {
                     screen_in_world.x++;
-                    if (screen_in_world.x >= world_height) {
+                    if (screen_in_world.x >= world_width) {
                         screen_in_world.x = 0;
                     }
                     user_in_screen.x--;
@@ -146,17 +208,16 @@ int main(int argc, char **argv)
                 close(EXIT_SUCCESS);
         }
 
-        //
-        // Draw
-        // 
         erase();
         move(status_line, 0);
         clrtoeol();
         move(status_line, 0);
-        printw("(%d, %d) [%d, %d] %s %lu", user_in_world.x,   user_in_world.y,
-                                           user_in_screen.x, user_in_screen.y, 
-                                           paused ? "PAUSED" : "",
-                                           steps);
+        printw("uiw(%d, %d) uis[%d, %d] siw{%d, %d} %s %lu",
+               user_in_world.x, user_in_world.y,
+               user_in_screen.x, user_in_screen.y, 
+               screen_in_world.x, screen_in_world.y,
+               paused ? "PAUSED" : "",
+               steps);
         move(0, 0);
         for (int i = 0; i < screen_height; i++) {
             int y = (screen_in_world.y + i) % world_height;
@@ -217,5 +278,11 @@ int main(int argc, char **argv)
             iterate_one_step = false;
         }
     }
-}
+}   //}}}
+
+void quiet_mode()
+{   // {{{
+    // Read seed from stdin
+    // etc.
+}   // }}}
 
