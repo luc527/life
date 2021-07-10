@@ -320,7 +320,11 @@ void quiet_mode()
         } else {
             world[y][x] = c != ' ';
             x++;
-            if (x >= world_width) break;
+            if (x >= world_width) {
+                y++;
+                if (y >= world_height) break;
+                x = 0;
+            }
         }
     }
 
