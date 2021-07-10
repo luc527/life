@@ -106,13 +106,8 @@ int main(int argc, char **argv)
                 break;
             }
         }
-        bool ok_width  = world_width  >= 5 && world_width  <= 1000;
-        bool ok_height = world_height >= 5 && world_height <= 1000;
-        if (!ok_width || !ok_height) {
-            fputs("Dimensions too small (<5) or too large (>1000)!\n", stderr);
-            world_height = DEFAULT_WORLD_HEIGHT;
-            world_width  = DEFAULT_WORLD_WIDTH;
-        }
+        if (world_width  < 5 || world_width  > 1000) world_width  = DEFAULT_WORLD_WIDTH;
+        if (world_height < 5 || world_height > 1000) world_height = DEFAULT_WORLD_HEIGHT;
     }
 
     world = calloc_or_fail(world_height, sizeof(*world));
