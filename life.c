@@ -1,3 +1,8 @@
+// TODO explore the performance of a more 'packed' representation of the world,
+// using every bit in an int to represent a single cell
+//
+// Should be better for cache and stuff
+
 #include <assert.h>
 #include <ncurses.h>
 #include <stdbool.h>
@@ -266,7 +271,12 @@ void interactive_mode()
             case 'i':
                 iterate_one_step = true;
                 break;
-            // TODO add more commands: c (clear), r (random), ...
+            case 'c':
+                for (int y = 0; y < world_height; y++)
+                    for (int x = 0; x < world_width; x++)
+                        world[y][x] = 0;
+                break;
+            // TODO add command 'r' for random
             // also some for moving faster (like three squares at a time or something)
             case 'q':
                 close(EXIT_SUCCESS);
